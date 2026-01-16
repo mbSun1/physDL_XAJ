@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="055a9b2a-b9a0-4735-880f-04f28d950006" name="更改" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="33DUW53B60TNn0g4txmmuf5F3O3" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python 测试.Doctests (parsers 内).executor": "Run",
+    "Python.StreamflowExample-DI.executor": "Run",
+    "Python.camels.executor": "Run",
+    "Python.defaultSetting.executor": "Run",
+    "Python.fix_model_attributes.executor": "Run",
+    "Python.rnn.executor": "Run",
+    "Python.stat.executor": "Run",
+    "Python.testPUR-Reg.executor": "Run",
+    "Python.testXAJ-Dynamic.executor": "Run",
+    "Python.testXAJ-Static.executor": "Run",
+    "Python.test_data_loading.executor": "Run",
+    "Python.test_param_save.executor": "Run",
+    "Python.testdPLHBV-Dynamic.executor": "Run",
+    "Python.testdPLHBV-Static.executor": "Run",
+    "Python.train.executor": "Run",
+    "Python.trainPUR-Reg.executor": "Run",
+    "Python.trainXAJ-Dynamic.executor": "Run",
+    "Python.trainXAJ-Static.executor": "Run",
+    "Python.traindPLHBV-Dynamic.executor": "Run",
+    "Python.traindPLHBV-Static.executor": "Run",
+    "Python.traindPLHBV.executor": "Run",
+    "Python.xaj_static.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "D:/01_学术研究/00_在研论文/DPL/1模型代码调试/输入静态属性+强迫10.15重新调试/PhysDLXAJ",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\01_学术研究\00_在研论文\DPL\1模型代码调试\输入静态属性+强迫10.15重新调试\PhysDL\experiments1" />
+      <recent name="D:\01_学术研究\00_在研论文\DPL\1模型代码调试\输入静态属性+强迫10.15重新调试\PhysDL\example\dPLHBV" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-b26f3e71634d-JavaScript-PY-251.26094.141" />
+        <option value="bundled-python-sdk-9f8e2b94138c-36ea0e71a18c-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-251.26094.141" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="默认任务">
+      <changelist id="055a9b2a-b9a0-4735-880f-04f28d950006" name="更改" comment="" />
+      <created>1758851164909</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1758851164909</updated>
+      <workItem from="1758851166024" duration="242000" />
+      <workItem from="1758873438607" duration="56000" />
+      <workItem from="1758873518809" duration="2874000" />
+      <workItem from="1758876441583" duration="16541000" />
+      <workItem from="1760514274424" duration="15540000" />
+      <workItem from="1760578488380" duration="46379000" />
+      <workItem from="1760948270113" duration="20168000" />
+      <workItem from="1761118327774" duration="21458000" />
+      <workItem from="1761212359298" duration="21946000" />
+      <workItem from="1761380647383" duration="2922000" />
+      <workItem from="1761396861344" duration="6006000" />
+      <workItem from="1761404719004" duration="15640000" />
+      <workItem from="1761700866388" duration="334000" />
+      <workItem from="1761701663497" duration="28394000" />
+      <workItem from="1762305073219" duration="18721000" />
+      <workItem from="1762391029781" duration="39562000" />
+      <workItem from="1762939036474" duration="1987000" />
+      <workItem from="1762998114000" duration="6925000" />
+      <workItem from="1763087285907" duration="7801000" />
+      <workItem from="1763173197822" duration="23953000" />
+      <workItem from="1763431605930" duration="442000" />
+      <workItem from="1763453777772" duration="67763000" />
+      <workItem from="1768559340330" duration="473000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/hydroMLlib/model/xaj_static.py</url>
+          <line>16</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/hydroDL_dev$Doctests__parsers__.coverage" NAME="Doctests (parsers 内) 覆盖结果" MODIFIED="1758875862264" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="F:/software_install/Anaconda/envs/dpl/Lib/site-packages/pandas/io" />
+    <SUITE FILE_PATH="coverage/PhysDL$test_param_save.coverage" NAME="test_param_save 覆盖结果" MODIFIED="1761221999557" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PhysDL$trainXAJ_Dynamic.coverage" NAME="trainXAJ-Dynamic 覆盖结果" MODIFIED="1762571610000" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/hydroDL_dev$testPUR_Reg.coverage" NAME="testPUR-Reg 覆盖结果" MODIFIED="1759025845261" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/example/PUR" />
+    <SUITE FILE_PATH="coverage/hydroDL_dev$testdPLHBV_Dynamic.coverage" NAME="testdPLHBV-Dynamic 覆盖结果" MODIFIED="1758947060300" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/example/dPLHBV" />
+    <SUITE FILE_PATH="coverage/PhysDL$testXAJ_Dynamic.coverage" NAME="testXAJ-Dynamic 覆盖结果" MODIFIED="1762736602595" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDL$test_data_loading.coverage" NAME="test_data_loading 覆盖结果" MODIFIED="1761119150789" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PhysDL$defaultSetting.coverage" NAME="defaultSetting 覆盖结果" MODIFIED="1761720834021" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroMLlib/utils" />
+    <SUITE FILE_PATH="coverage/hydroDL_dev$StreamflowExample_DI.coverage" NAME="StreamflowExample-DI 覆盖结果" MODIFIED="1758875867868" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/example" />
+    <SUITE FILE_PATH="coverage/PhysDL$traindPLHBV_Dynamic.coverage" NAME="traindPLHBV-Dynamic 覆盖结果" MODIFIED="1762266963499" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDLXAJ$trainXAJ_Dynamic.coverage" NAME="trainXAJ-Dynamic 覆盖结果" MODIFIED="1763444755331" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhyDL_XAJ$trainXAJ_Static.coverage" NAME="trainXAJ-Static 覆盖结果" MODIFIED="1763094453388" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDL$train.coverage" NAME="train 覆盖结果" MODIFIED="1762265801854" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroMLlib/model" />
+    <SUITE FILE_PATH="coverage/PhysDL$testdPLHBV_Dynamic.coverage" NAME="testdPLHBV-Dynamic 覆盖结果" MODIFIED="1761401230106" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/example/dPLHBV" />
+    <SUITE FILE_PATH="coverage/PhysDL$traindPLHBV_Static.coverage" NAME="traindPLHBV-Static 覆盖结果" MODIFIED="1762266578388" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDL$testXAJ_Static.coverage" NAME="testXAJ-Static 覆盖结果" MODIFIED="1762745184833" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDLXAJ$trainXAJ_Static.coverage" NAME="trainXAJ-Static 覆盖结果" MODIFIED="1763829731880" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhyDL_XAJ$xaj_static.coverage" NAME="xaj_static 覆盖结果" MODIFIED="1762858083418" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroMLlib/model" />
+    <SUITE FILE_PATH="coverage/PhysDL$rnn.coverage" NAME="rnn 覆盖结果" MODIFIED="1760579038721" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroDL/model" />
+    <SUITE FILE_PATH="coverage/PhysDLXAJ$testXAJ_Static.coverage" NAME="testXAJ-Static 覆盖结果" MODIFIED="1763514585528" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDL$traindPLHBV.coverage" NAME="traindPLHBV 覆盖结果" MODIFIED="1761031131629" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/example/dPLHBV" />
+    <SUITE FILE_PATH="coverage/PhysDL$xaj.coverage" NAME="xaj 覆盖结果" MODIFIED="1762153570640" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroMLlib/model" />
+    <SUITE FILE_PATH="coverage/PhyDL_XAJ$testXAJ_Dynamic.coverage" NAME="testXAJ-Dynamic 覆盖结果" MODIFIED="1763431634386" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/hydroDL_dev$camels.coverage" NAME="camels 覆盖结果" MODIFIED="1758875009040" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroDL/data" />
+    <SUITE FILE_PATH="coverage/hydroDL_dev$traindPLHBV.coverage" NAME="traindPLHBV 覆盖结果" MODIFIED="1758947137571" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/example/dPLHBV" />
+    <SUITE FILE_PATH="coverage/hydroDL_dev$testdPLHBV_Static.coverage" NAME="testdPLHBV-Static 覆盖结果" MODIFIED="1759023506296" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/example/dPLHBV" />
+    <SUITE FILE_PATH="coverage/hydroDL_dev$trainPUR_Reg.coverage" NAME="trainPUR-Reg 覆盖结果" MODIFIED="1759025741879" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/example/PUR" />
+    <SUITE FILE_PATH="coverage/PhysDL$testdPLHBV_Static.coverage" NAME="testdPLHBV-Static 覆盖结果" MODIFIED="1762262495797" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDL$xaj_static.coverage" NAME="xaj_static 覆盖结果" MODIFIED="1762395581385" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroMLlib/model" />
+    <SUITE FILE_PATH="coverage/PhyDL_XAJ$testXAJ_Static.coverage" NAME="testXAJ-Static 覆盖结果" MODIFIED="1763173362922" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDLXAJ$testXAJ_Dynamic.coverage" NAME="testXAJ-Dynamic 覆盖结果" MODIFIED="1763432104069" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDL$fix_model_attributes.coverage" NAME="fix_model_attributes 覆盖结果" MODIFIED="1761217569739" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/PhysDL$stat.coverage" NAME="stat 覆盖结果" MODIFIED="1761399837604" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroDL/post" />
+    <SUITE FILE_PATH="coverage/PhyDL_XAJ$trainXAJ_Dynamic.coverage" NAME="trainXAJ-Dynamic 覆盖结果" MODIFIED="1763299853426" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDL$camels.coverage" NAME="camels 覆盖结果" MODIFIED="1761565172249" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroMLlib/utils" />
+    <SUITE FILE_PATH="coverage/PhysDL$trainXAJ_Static.coverage" NAME="trainXAJ-Static 覆盖结果" MODIFIED="1762479051779" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/experiments" />
+    <SUITE FILE_PATH="coverage/PhysDLXAJ$train.coverage" NAME="train 覆盖结果" MODIFIED="1763431594873" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/hydroMLlib/model" />
+  </component>
+</project>
