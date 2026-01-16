@@ -1,17 +1,15 @@
-# -*- coding: utf-8 -*-
 """
-XAJ水文模型实现模块 (XAJ Hydrological Model Implementation Module)
+XAJ hydrological model implementation module.
 
-本模块包含新安江(XAJ)水文模型的PyTorch实现，支持多组件参数化和深度学习参数反演。
+This module provides a PyTorch implementation of the Xin'anjiang (XAJ) hydrological
+model with multi-component parameterization and deep-learning-based parameter inversion.
 
-主要功能包括：
+Main components:
+1. XAJ hydrological model class:
+   - XAJMul: multi-component XAJ model with static parameters
 
-1. XAJ水文模型类：
-   - XAJMul: 多组件静态参数XAJ模型
-
-2. 深度学习+XAJ模型组合类：
-   - MultiInv_XAJModel: 深度学习参数反演+静态XAJ模型
-
+2. Deep learning + XAJ hybrid model class:
+   - MultiInv_XAJModel: deep-learning parameter inversion + static XAJ model
 """
 
 import torch
@@ -19,20 +17,24 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .hydroRouting import UH_conv, UH_gamma
 from .dLmodels import (
-    CudnnLstmModel, CudnnGruModel, CudnnBiLstmModel, 
+    CudnnLstmModel, CudnnGruModel, CudnnBiLstmModel,
     CudnnBiGruModel, CudnnRnnModel, CudnnCnnLstmModel, CudnnCnnBiLstmModel
 )
 
 
-
 class XAJMul(nn.Module):
     """
-    多组件新安江模型（向量化版，HBVMul 风格条件写法）
+    Multi-component Xin'anjiang model (vectorized, HBVMul-style conditional logic).
     ------------------------------------------------------------------
-    目标：
-    - 在同一批气象强迫下，让每个格点支持 mu 组新安江参数（表达流域异质性/不确定性）
-    - 全过程保持“无 Python if、用 clamp/where 做条件触发”的张量化风格
-    - 明确分成：三层蒸散 → 蓄满产流 → 土壤含水更新 → 自由水库调蓄 → 三水源分配 → 线性退水 → (可选)河网汇流
+    Goals:
+    - Under the same meteorological forcing, allow each grid cell to carry `mu`
+      sets of XAJ parameters to represent heterogeneity / uncertainty.
+    - Keep the whole computation in a tensorized style (no Python `if`, use
+      `clamp` / `where` for conditional behavior).
+    - Explicitly separate the daily process into:
+      three-layer evapotranspiration → saturation-excess runoff generation →
+      soil moisture update → free water reservoir routing → three-flow
+      separation → linear reservoirs → (optional) river routing.
     """
 
     def __init__(self):
@@ -43,29 +45,32 @@ class XAJMul(nn.Module):
                 outstate=False, routOpt=False, comprout=False,
                 corrwts=None, pcorr=None):
         """
-        参数说明
-        --------
-        x: [T, B, 2]，依次为 (P, PET)
-           - P: mm/d，流域平均降水
-           - PET: mm/d，潜在蒸散
-        parameters: [B, 12, mu]，12 个无量纲参数，每个格点有 mu 组
-        mu: int，多组件个数
-        muwts: [B, mu] or None，多组件权重
-        rtwts: [B, 2] or [B*mu, 2]，汇流的单位线两个控制参数
-        bufftime: 预热长度
-        outstate: 是否返回末态（便于分段计算）
-        routOpt: 是否做河网汇流
-        comprout: 是否“每个组件先汇流再合成”
+        Argument description
+        --------------------
+        x: [T, B, 2], ordering (P, PET)
+           - P: mm/d, basin-averaged precipitation
+           - PET: mm/d, potential evapotranspiration
+        parameters: [B, 12, mu], 12 dimensionless parameters, `mu` sets for each grid
+        mu: int, number of parameter components
+        muwts: [B, mu] or None, weights for the `mu` components
+        rtwts: [B, 2] or [B*mu, 2], two routing control parameters for the unit hydrograph
+        bufftime: int, warm-up length (time steps)
+        outstate: bool, if True, also return final model states (for segmented runs)
+        routOpt: bool, if True, perform river routing
+        comprout: bool, if True, route each component before aggregation
+        corrwts: tensor or None, weights for precipitation correction
+        pcorr: list or None, precipitation correction parameter range
         """
 
-        # 小数值保护，所有除法、幂次底数都用它兜底
+        # Small numerical protection used for divisions and exponent bases
         PRECS = 1e-6
 
         # ============================================================
-        # 1. 初始状态获取：要么预热，要么造一个小正数初值
+        # 1. Initial model states: either from warm-up or small positive values
         # ============================================================
         if bufftime > 0:
-            # 有预热：复用同结构模型，把前 bufftime 步推一遍，取末态
+            # With warm-up: reuse the same-structure model, run the first `bufftime`
+            # steps and take the final states.
             with torch.no_grad():
                 x_init = x[:bufftime, :, :]
                 init_model = XAJMul()
@@ -77,21 +82,21 @@ class XAJMul(nn.Module):
                     corrwts=corrwts, pcorr=pcorr,
                 )
         else:
-            # 无预热：直接给各个水库/张力水一个很小的正数，防止后面出现除 0
+            # Without warm-up: initialize all storages with a small positive value
+            # to avoid division by zero later.
             Ngrid = x.shape[1]
             device = x.device if hasattr(x, "device") else torch.device("cpu")
-            # 参考 HBVMul 方式一初始化（全零张量 + 小正数）
-            WU = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # 上层张力水
-            WL = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # 中层张力水
-            WD = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # 深层张力水
-            S  = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # 自由水库水深
-            QI = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # 壤中线性库状态
-            QG = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # 地下线性库状态
-            FR = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # 上一时段产流面积
-
+            # Initialization following HBVMul-style: zeros + small positive offset
+            WU = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # upper tension water
+            WL = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # middle tension water
+            WD = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # deep tension water
+            S  = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # free water storage
+            QI = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # interflow linear reservoir state
+            QG = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # groundwater linear reservoir state
+            FR = (torch.zeros([Ngrid, mu], dtype=torch.float32, device=device) + 0.001)  # contributing area of last time step
 
         # ============================================================
-        # 2. 去掉预热段，拆出 P / PET
+        # 2. Remove warm-up segment and extract P / PET
         # ============================================================
         P   = x[bufftime:, :, 0]     # [T, B]
         PET = x[bufftime:, :, 2]     # [T, B]
@@ -99,33 +104,35 @@ class XAJMul(nn.Module):
         device = P.device
 
         # ============================================================
-        # 3. 降水订正（可选）：P_corr = P * α(basin)
-        #    这样可以把 CFS/ECMWF 之类的系统性偏差拉回观测量级
+        # 3. Optional precipitation correction: P_corr = P * α(basin)
+        #    This can pull systematic bias (e.g., from CFS/ECMWF) back toward observations.
         # ============================================================
         if pcorr is not None:
             parPCORR = pcorr[0] + corrwts[:, 0] * (pcorr[1] - pcorr[0])
             P = parPCORR.unsqueeze(0).repeat(Nstep, 1) * P
 
-        # 把时间-格点的强迫扩展出 mu 这个维度，后面就能一次性算多个参数集了
+        # Expand time–space forcing into the `mu` dimension to run multiple parameter
+        # sets in one shot.
         Pm   = P.unsqueeze(-1).repeat(1, 1, mu)     # [T, B, mu]
         PETm = PET.unsqueeze(-1).repeat(1, 1, mu)
 
         # ============================================================
-        # 4. 参数反归一化：把 [0,1] 还原到水文意义范围
+        # 4. Parameter de-normalization: map [0, 1] to hydrologically
+        #    meaningful ranges
         # ============================================================
-        # 参数顺序对应：
-        # 0 ke   蒸散折算系数
-        # 1 b    蓄水容量曲线指数
-        # 2 wum  上层张力水容量
-        # 3 wlm  中层张力水容量
-        # 4 wm   总张力水容量
-        # 5 c    中下层蒸散折减系数
-        # 6 sm   自由水库最大水深
-        # 7 ex   自由水库出流曲线指数
-        # 8 ki   自由水库→壤中补给系数
-        # 9 kg   自由水库→地下补给系数
-        # 10 ci  壤中线性退水系数
-        # 11 cg  地下线性退水系数
+        # Parameter order:
+        # 0 ke   evapotranspiration scaling factor
+        # 1 b    storage capacity curve exponent
+        # 2 wum  upper tension water capacity
+        # 3 wlm  middle tension water capacity
+        # 4 wm   total tension water capacity
+        # 5 c    evapotranspiration reduction factor for lower layers
+        # 6 sm   maximum water depth of free water reservoir
+        # 7 ex   exponent of free water reservoir outflow curve
+        # 8 ki   recharge coefficient from free water to interflow reservoir
+        # 9 kg   recharge coefficient from free water to groundwater reservoir
+        # 10 ci  linear reservoir coefficient for interflow
+        # 11 cg  linear reservoir coefficient for groundwater
         parascaLst = [
             [0.3, 2.0],     # 0 ke
             [0.0, 5.0],     # 1 b
@@ -140,7 +147,8 @@ class XAJMul(nn.Module):
             [0.0, 0.998],   # 10 ci
             [0.0, 0.998],   # 11 cg
         ]
-        routscaLst = [[0.0, 2.9], [0.0, 6.5]]  # 汇流单位线两个控制量的范围
+        # Value ranges for the two routing-unit-hydrograph control parameters
+        routscaLst = [[0.0, 2.9], [0.0, 6.5]]
 
         sc = lambda arr, i: parascaLst[i][0] + arr * (parascaLst[i][1] - parascaLst[i][0])
 
@@ -148,117 +156,131 @@ class XAJMul(nn.Module):
             sc(parameters[:, i, :], i) for i in range(len(parascaLst))
         ]
 
-        # 深层张力水容量 = 总容量 - 上层 - 中层，若用户给的范围有重叠，这里强行截成 ≥0，保证有物理意义
+        # Deep tension water capacity = total capacity - upper - middle.
+        # If user-specified ranges overlap, clamp to ≥ 0 to keep physical meaning.
         wdm = torch.clamp(parWM - parWUM - parWLM, min=0.0)
 
-        # KI + KG 必须 < 1，否则会把自由水在同一时段抽光
+        # KI + KG must be < 1; otherwise the free water storage would be fully
+        # depleted in a single time step.
         sum_k = parKI_ + parKG_
         parKI = torch.where(sum_k < 1.0, parKI_, (1 - PRECS) * parKI_ / (sum_k + PRECS))
         parKG = torch.where(sum_k < 1.0, parKG_, (1 - PRECS) * parKG_ / (sum_k + PRECS))
 
         # ============================================================
-        # 5. 给时间序列通量预分配空间，便于最后做 mu 聚合
+        # 5. Pre-allocate time series fluxes for later `mu` aggregation
         # ============================================================
-        QS_inflow = torch.zeros((Nstep, Ngrid, mu), device=device)  # 坡面/快流
-        QI_inflow = torch.zeros_like(QS_inflow)                     # 壤中流
-        QG_inflow = torch.zeros_like(QS_inflow)                     # 地下流
-        ET_series = torch.zeros_like(QS_inflow)                     # 实际蒸散
-        FR0 = FR.clone()                                            # 上一时段产流面积
+        QS_inflow = torch.zeros((Nstep, Ngrid, mu), device=device)  # surface / quick flow
+        QI_inflow = torch.zeros_like(QS_inflow)                     # interflow
+        QG_inflow = torch.zeros_like(QS_inflow)                     # groundwater flow
+        ET_series = torch.zeros_like(QS_inflow)                     # actual evapotranspiration
+        FR0 = FR.clone()                                            # contributing area of previous step
 
         # ============================================================
-        # 6. 主时间推进：一层一层走完整个新安江日过程
+        # 6. Main time-stepping loop: traverse the XAJ daily process
         # ============================================================
         for t in range(Nstep):
             # --------------------------------------------------------
-            # 6.1 三层蒸散模块
-            #    逻辑：先消耗上层 + 当日雨能提供的水 → 再向中层索取 → 再向深层索取
-            #    上层是能量受控，下面两层是水量受限 + 折减受限
+            # 6.1 Three-layer evapotranspiration
+            #     Logic: first consume water from upper layer + today's rainfall,
+            #     then request from middle layer, finally from deep layer.
+            #     Upper layer is energy-controlled; the lower two are limited by
+            #     available water and reduction factor.
             # --------------------------------------------------------
             P_t   = Pm[t, :, :]               # 当前时段降水
-            PET_t = PETm[t, :, :] * parKE     # 折算后的 PET，表示“这片下垫面真正能蒸掉的上限”
+            PET_t = PETm[t, :, :] * parKE     # scaled PET: actual evaporative capacity of this surface
 
-            # 上层蒸散：能量足够时把 PET 全蒸掉，否则把手上能拿到的水蒸掉（WU + 当日雨）
+            # Upper layer ET: if energy is enough, evaporate PET; otherwise evaporate
+            # all water available in the upper layer plus today's rainfall.
             EU = torch.min(PET_t, WU + P_t)
 
-            # 向下层传的蒸散需求量
+            # ET demand passed to lower layers
             D = torch.clamp(PET_t - EU, min=0.0)
 
-            # 中层蒸散：我们用“湿润度因子”来平滑地在“湿润公式”和“干旱公式”之间切换，
-            # 而不是写 if WL > c*WLM ... 这样可以保持张量可导。
-            wet_excess = torch.clamp(WL - parC * parWLM, min=0.0)   # >0 说明中层比较湿
-            wet_ratio  = wet_excess / (wet_excess + 1.0)            # 映射到 (0,1)
+            # Middle-layer ET: use a "wetness factor" to smoothly transition between
+            # the wet and dry formulations instead of writing `if WL > c*WLM ...`,
+            # so the tensor computation stays differentiable.
+            wet_excess = torch.clamp(WL - parC * parWLM, min=0.0)   # >0 means the middle layer is wet
+            wet_ratio  = wet_excess / (wet_excess + 1.0)            # maps to (0, 1)
 
-            # 湿润时：按“剩余需水 × 相对含水量”供水
+            # Wet regime: supply `D * WL / WLM`
             EL_wet = D * WL / (parWLM + PRECS)
-            # 干旱时：只能按 c 倍供一点，且不能超过 WL 自己的水
+            # Dry regime: limited by `c * D` and by current WL
             EL_dry = torch.min(parC * D, WL)
 
-            # 最终中层蒸散 = 两个公式按湿润度加权
+            # Final middle-layer ET: weighted sum of the two formulas
             EL = wet_ratio * EL_wet + (1 - wet_ratio) * EL_dry
             EL = torch.clamp(EL, min=0.0)
-            EL = torch.min(EL, WL)  # 不能蒸出负数
+            EL = torch.min(EL, WL)  # cannot evaporate more than stored
 
-            # 深层蒸散：上一层没供够的部分，再按 c 吸一点，不能超过深层现有水
+            # Deep-layer ET: use remaining demand, scaled by `c`, but not exceeding
+            # current deep-layer storage.
             D_res = torch.clamp(D - EL, min=0.0)
             ED = torch.min(parC * D_res, WD)
 
-            # 当日实际蒸散
+            # Actual ET for this day
             E = EU + EL + ED
             ET_series[t, :, :] = E
 
             # --------------------------------------------------------
-            # 6.2 蓄满产流模块
-            #    经典新安江思路：土壤越湿，产流越容易；用容量曲线把“湿度+净雨”映射成产流量
+            # 6.2 Saturation-excess runoff generation
+            #     Classic XAJ idea: wetter soil leads to easier runoff generation;
+            #     use a storage capacity curve to map "soil wetness + net rainfall"
+            #     to runoff.
             # --------------------------------------------------------
-            PE = torch.clamp(P_t - E, min=0.0)   # 降水扣掉蒸散后的“能进张力水/自由水的净雨”
-            W  = WU + WL + WD                    # 当前三层土壤总含水量，代表“土壤预湿状况”
+            PE = torch.clamp(P_t - E, min=0.0)   # net rainfall after ET, entering soil/free water
+            W  = WU + WL + WD                    # total soil water in three layers, representing antecedent wetness
 
-            # 容量曲线的“最大等效水深” WMM
+            # Maximum equivalent depth of the storage capacity curve
             WMM = parWM * (1.0 + parB)
 
-            # 1 - W/WM 是“还没装满的比例”，越小越湿，这个值要当幂次底数，所以 clamp 到正数
+            # 1 - W/WM is the "unfilled fraction"; the smaller it is, the wetter the soil.
+            # It appears as a power base, so we clamp it to a positive number.
             base_W = torch.clamp(1.0 - W / (parWM + PRECS), min=PRECS)
 
-            # A 是“容量曲线已经贡献出来的等效水深”，越湿 A 越大
+            # A is the equivalent water depth already contributed by the curve; wetter soil → larger A.
             A = WMM * (1.0 - base_W ** (1.0 / (1.0 + parB)))
 
-            # (PE + A) / WMM 表征“今天的水+已有湿度”相对于能装的上限的比例
+            # (PE + A) / WMM expresses today's water plus antecedent wetness
+            # relative to maximum storage.
             ratio = torch.clamp((PE + A) / (WMM + PRECS), max=1.0)
 
-            # 分段产流：
-            # - 没装满：有个幂次形式的非线性产流
-            # - 装满了：就是超量产流
+            # Piecewise runoff generation:
+            # - Unsaturated: nonlinear runoff from a power function
+            # - Saturated: pure excess runoff
             R_per = torch.where(
                 PE + A < WMM,
                 PE - (parWM - W) + parWM * (1.0 - ratio) ** (1.0 + parB),
                 PE - (parWM - W)
             )
-            R_per = torch.clamp(R_per, min=0.0)  # 不允许负产流
+            R_per = torch.clamp(R_per, min=0.0)  # non-negative runoff only
 
             # --------------------------------------------------------
-            # 6.3 三层张力水更新（透水区质量守恒）
-            #    这一步决定了下个时段的“土壤预湿状况”，跟后面每一步都耦合
+            # 6.3 Three-layer soil tension water update (mass balance in
+            #     the permeable zone)
+            #     This step controls antecedent soil wetness for the next time
+            #     step and is coupled with everything that follows.
             # --------------------------------------------------------
-            dW = P_t - E - R_per  # 真正留在土壤里的水量（可能正也可能负）
+            dW = P_t - E - R_per  # net water stored in soil (can be positive or negative)
 
-            # 正的：说明今天水多 → 往上中下三层依次回填
+            # Positive dW: surplus water → refill upper, then middle, then deep layer
             dpos = torch.clamp(dW, min=0.0)
 
-            # 填上层：不能超过 parWUM
+            # Fill upper layer; cannot exceed parWUM
             fill_u = torch.min(dpos, torch.clamp(parWUM - WU, min=0.0))
             WU = WU + fill_u
             dpos = dpos - fill_u
 
-            # 填中层
+            # Fill middle layer
             fill_l = torch.min(dpos, torch.clamp(parWLM - WL, min=0.0))
             WL = WL + fill_l
             dpos = dpos - fill_l
 
-            # 填深层
+            # Fill deep layer
             fill_d = torch.min(dpos, torch.clamp(wdm - WD, min=0.0))
             WD = WD + fill_d
 
-            # 负的：说明今天亏水 → 按上→中→下的顺序抽水，不能抽到负数
+            # Negative dW: water deficit → withdraw in order from upper to middle to deep,
+            # not letting any storage go negative.
             dneg = torch.clamp(-dW, min=0.0)
 
             sub_u = torch.min(dneg, WU)
@@ -273,72 +295,76 @@ class XAJMul(nn.Module):
             WD = WD - sub_d
 
             # --------------------------------------------------------
-            # 6.4 自由水库调蓄 + 快流生成
-            #    这里对应新安江的“自由水库”部分，核心有四步：
-            #    (1) 定义当前产流面积 FR（有雨就按 R/PE，没雨就承袭上一步）；
-            #    (2) 把上一时段 S 按面积换算，保证体积守恒；
-            #    (3) 算自由水库的“可释水量” AU，非线性函数；
-            #    (4) 按两段式公式算快流 RS，并不超过 R_per
+            # 6.4 Free water reservoir routing + quick flow generation
+            #     This corresponds to the "free water reservoir" in XAJ with four steps:
+            #     (1) Define current contributing area FR (R/PE when raining, else
+            #         inherit from previous step);
+            #     (2) Convert previous S from area FR0 to FR to preserve volume;
+            #     (3) Compute non-linear releasable water AU;
+            #     (4) Compute quick flow RS with a two-segment formula, capped by R_per.
             # --------------------------------------------------------
-            # (1) 产流面积 FR：有雨时 R/PE，PE=0 时沿用上时段
+            # (1) Contributing area FR: R/PE when PE > 0; retain previous FR0 otherwise.
             FR_new = R_per / (PE + PRECS)
             FR = FR_new * (PE > 0.0).float() + FR0 * (PE <= 0.0).float()
             FR = torch.clamp(FR, 0.0, 1.0)
 
-            # (2) 面积换算：上时段 S 是 FR0 面积上的水深，现在要换到 FR 面积上，保持体积不变
+            # (2) Area conversion: previous S is on area FR0; convert to area FR to
+            #     keep total volume unchanged.
             S_eq = S * FR0 / (FR + PRECS)
             S_eq = torch.clamp(S_eq, max=parSM)
 
-            # (3) 自由水库非线性出流能力 AU
+            # (3) Non-linear outflow capacity AU of the free water reservoir
             SMM = parSM * (1.0 + parEX)
             ratio_s = torch.clamp(1.0 - S_eq / (parSM + PRECS), min=PRECS)
             AU = SMM * (1.0 - ratio_s ** (1.0 / (1.0 + parEX)))
 
-            # (4) 快流 RS：对应新安江的“两段式产流”写法
+            # (4) Quick flow RS: two-segment runoff formula of XAJ
             ratio_pa = torch.clamp((PE + AU) / (SMM + PRECS), max=1.0)
             RS_part1 = (PE + S_eq - parSM + parSM * (1.0 - ratio_pa) ** (1.0 + parEX)) * FR
             RS_part2 = (PE + S_eq - parSM) * FR
             RS = torch.where(PE + AU < SMM, RS_part1, RS_part2)
             RS = torch.clamp(RS, min=0.0)
-            RS = torch.min(RS, R_per)  # 坡面快流不能超过透水区当期产流
+            RS = torch.min(RS, R_per)  # quick flow cannot exceed runoff from permeable zone
 
-            # 回蓄：没变成快流的就回到自由水库
+            # Refill: water not converted to quick flow returns to the free water storage
             S = S_eq + (R_per - RS) / (FR + PRECS)
             S = torch.clamp(S, max=parSM)
 
-            # 更新 FR0，给下一时段做面积换算用
+            # Update FR0 for the next time step
             FR0 = FR
 
             # --------------------------------------------------------
-            # 6.5 三水源分配 + 坡面前的线性水库退水
-            #    新安江里自由水库不是一次把水都放出去，而是分成：直接出流的 RS，
-            #    还有两条滞后项 RI / RG，再各自走一阶线性水库
+            # 6.5 Three-flow separation + linear reservoirs before hillslope outlet
+            #     In XAJ, the free water reservoir releases water as:
+            #     direct quick flow RS and two delayed components RI / RG, each
+            #     entering a first-order linear reservoir.
             # --------------------------------------------------------
-            # 自由水库→壤中、地下的入流
+            # Inflow from free water to interflow and groundwater
             RI = parKI * S * FR
             RG = parKG * S * FR
-            # 自由水库剩余水量
+            # Remaining free water storage
             S = S * (1.0 - parKI - parKG)
 
-            # 一阶线性退水：当前出流 = 上一时刻出流 * 衰减 + (1-衰减)*当前入库
+            # First-order linear reservoirs:
+            # current outflow = previous outflow * decay + (1 - decay) * current inflow
             QI = parCI * QI + (1.0 - parCI) * RI
             QG = parCG * QG + (1.0 - parCG) * RG
 
-            # 记录本时段通量
+            # Save fluxes for this time step
             QS_inflow[t, :, :] = RS
             QI_inflow[t, :, :] = QI
             QG_inflow[t, :, :] = QG
 
         # ============================================================
-        # 7. 组件聚合：把 mu 个参数集的结果合成一个流域响应
+        # 7. Component aggregation: combine `mu` parameter sets into a basin response
         # ============================================================
-        # 先把三个分量各自做组件平均，方便分析
+        # First, average each component separately for analysis.
         QSave = QS_inflow.mean(-1, keepdim=True)
         QIave = QI_inflow.mean(-1, keepdim=True)
         QGave = QG_inflow.mean(-1, keepdim=True)
         ETave = ET_series.mean(-1, keepdim=True)
 
-        # 真正要进河的，是三部分的和
+        # The actual inflow to the river is the sum of the three components
         river_inflow = QS_inflow + QI_inflow + QG_inflow  # [T, B, mu]
 
         if muwts is None:
@@ -347,24 +373,24 @@ class XAJMul(nn.Module):
             inflow_mean = (river_inflow * muwts).sum(-1)
 
         # ============================================================
-        # 8. 河网汇流（可选）：单位线卷积
+        # 8. Optional river routing: unit hydrograph convolution
         # ============================================================
         if routOpt:
-            # 选谁做汇流输入：每个组件单独路由 or 合成后再路由
+            # Choose routing input: route each component separately or route after aggregation.
             if comprout:
                 Qsim = river_inflow.view(Nstep, Ngrid * mu)
             else:
                 Qsim = inflow_mean
 
-            # 把 [0,1] 的路由参数映射回物理区间
+            # Map routing parameters from [0, 1] back to physical ranges
             tempa = routscaLst[0][0] + rtwts[:, 0] * (routscaLst[0][1] - routscaLst[0][0])
             tempb = routscaLst[1][0] + rtwts[:, 1] * (routscaLst[1][1] - routscaLst[1][0])
 
-            # 展开到时间维
+            # Expand to time dimension
             routa = tempa.repeat(Nstep, 1).unsqueeze(-1)
             routb = tempb.repeat(Nstep, 1).unsqueeze(-1)
 
-            # 生成 Gamma 单位线并做 1D 卷积
+            # Generate Gamma unit hydrograph and perform 1D convolution
             UH = UH_gamma(routa, routb, lenF=15).permute(1, 2, 0)
             rf = torch.unsqueeze(Qsim, -1).permute(1, 2, 0)
             Qsrout = UH_conv(rf, UH).permute(2, 0, 1)
@@ -378,17 +404,17 @@ class XAJMul(nn.Module):
             else:
                 Qs = Qsrout
         else:
-            # 不做汇流就直接把“入河量”当出口
+            # Without routing, use inflow as outlet discharge directly
             Qs = inflow_mean.unsqueeze(-1)
 
         # ============================================================
-        # 9. 输出控制
+        # 9. Output control
         # ============================================================
         if outstate:
-            # 返回末态：给后面分段接着跑
+            # Return final states for continued segmented runs
             return Qs, WU, WL, WD, S, FR, QI, QG
         else:
-            # 标准输出：主流量 + 三分量 + 蒸散
+            # Standard output: main discharge + three components + ET
             Qall = torch.cat((Qs, QSave, QIave, QGave, ETave), dim=-1)
             return Qall
 
@@ -396,88 +422,92 @@ class XAJMul(nn.Module):
 
 class MultiInv_XAJModel(nn.Module):
     """
-    深度学习参数反演+静态XAJ模型类 (Deep Learning Parameter Inversion + Static XAJ Model Class)
-    
-    这是dPLXAJ模型的核心实现，结合了深度学习参数反演和XAJ水文模型。
-    模型使用RNN（LSTM/GRU/BiLSTM/BiGRU/RNN/CNN-LSTM/CNN-BiLSTM）从静态属性反演XAJ模型参数，
-    然后使用XAJ模型进行水文模拟。
-    
-    模型架构 (Model Architecture):
+    Deep-learning-based parameter inversion + static XAJ model.
+
+    This is the core implementation of the dPLXAJ model, combining deep learning
+    parameter inversion with the XAJ hydrological model.
+
+    The model uses an RNN (LSTM / GRU / BiLSTM / BiGRU / RNN / CNN-LSTM /
+    CNN-BiLSTM) to invert XAJ parameters from static attributes, and then uses
+    the XAJ model for hydrological simulation.
+
+    Model architecture:
     ----------
-    1. RNN参数反演模块：静态属性 -> XAJ参数
-    2. XAJ水文模型：气象数据 + XAJ参数 -> 径流模拟
-    
-    参数 (Parameters):
+    1. RNN-based parameter inversion: static attributes -> XAJ parameters
+    2. XAJ hydrological model: meteorological forcing + XAJ parameters -> runoff simulation
+
+    Parameters:
     ----------
     ninv : int
-        输入特征维度（静态属性数量）
+        Input feature dimension (number of static attributes)
     nfea : int
-        XAJ参数特征数量（固定为12）
+        Number of XAJ parameter features (fixed to 12)
     nmul : int
-        多组件数量，用于参数不确定性量化
+        Number of components, used for parameter uncertainty quantification
     hiddeninv : int
-        RNN隐藏层大小
+        Hidden size of the RNN
     drinv : float, default=0.5
-        RNN Dropout比率
+        Dropout rate for the RNN
     inittime : int, default=0
-        XAJ模型预热时间步长
+        Warm-up time steps for the XAJ model
     routOpt : bool, default=False
-        是否启用汇流计算
+        Whether to enable river routing
     comprout : bool, default=False
-        是否对每个组件分别进行汇流
+        Whether to route each component separately
     compwts : bool, default=False
-        是否学习多组件权重
+        Whether to learn multi-component weights
     pcorr : list or None, default=None
-        降水校正参数范围
+        Precipitation correction parameter range
     rnn_type : str, default='lstm'
-        RNN类型：'lstm', 'gru', 'bilstm', 'bigru', 'rnn', 'cnnlstm', 'cnnbilstm'
-        
-    用途 (Usage):
+        RNN type: 'lstm', 'gru', 'bilstm', 'bigru', 'rnn', 'cnnlstm', 'cnnbilstm'
+
+    Usage:
     ----------
-    主要用于静态参数XAJ模型的深度学习参数反演，适用于流域水文模拟和预测。
+    Mainly used for deep-learning-based parameter inversion of the static-parameter
+    XAJ model for basin hydrological simulation and prediction.
     """
     def __init__(self, *, ninv, nfea, nmul, hiddeninv, drinv=0.5, inittime=0, routOpt=False, comprout=False,
                  compwts=False, pcorr=None, rnn_type='lstm'):
         """
-        初始化深度学习参数反演+静态XAJ模型
-        
-        参数说明见类文档
+        Initialize the deep-learning-based parameter inversion + static XAJ model.
+
+        See the class docstring for a full description of the arguments.
         """
         super(MultiInv_XAJModel, self).__init__()
-        self.ninv = ninv                    # 输入特征维度（静态属性数量）
-        self.nfea = nfea                    # XAJ参数特征数量（固定为12）
-        self.hiddeninv = hiddeninv          # RNN隐藏层大小
-        self.nmul = nmul                    # 多组件数量
-        self.rnn_type = rnn_type.lower()    # RNN类型：'lstm', 'gru', 'bilstm', 'bigru', 'rnn'
+        self.ninv = ninv                    # input feature dimension (number of static attributes)
+        self.nfea = nfea                    # number of XAJ parameter features (fixed to 12)
+        self.hiddeninv = hiddeninv          # RNN hidden size
+        self.nmul = nmul                    # number of components
+        self.rnn_type = rnn_type.lower()    # RNN type: 'lstm', 'gru', 'bilstm', 'bigru', 'rnn'
         
         # =============================================================================
-        # 参数计算 (Parameter Calculation)
+        # Parameter counting
         # =============================================================================
-        # 计算RNN需要输出的总参数数量
-        nxajpm = nfea * nmul  # XAJ参数总数 = 特征数 × 多组件数
-        
-        # 汇流参数数量计算
+        # Total number of parameters the RNN needs to output
+        nxajpm = nfea * nmul  # total XAJ parameters = number of features × number of components
+
+        # Routing parameter count
         if comprout is False:
-            nroutpm = 2  # 简单汇流：每个流域2个参数
+            nroutpm = 2  # simple routing: two parameters per basin
         else:
-            nroutpm = nmul * 2  # 组件汇流：每个组件2个参数
-        
-        # 多组件权重参数数量计算
+            nroutpm = nmul * 2  # component-wise routing: two parameters for each component
+
+        # Component weight parameter count
         if compwts is False:
-            nwtspm = 0  # 不使用权重：简单平均
+            nwtspm = 0  # no weights: simple average
         else:
-            nwtspm = nmul  # 使用权重：每个组件一个权重
-        
-        # 降水校正参数数量计算
+            nwtspm = nmul  # with weights: one weight per component
+
+        # Precipitation correction parameter count
         if pcorr is None:
-            ntp = nxajpm + nroutpm + nwtspm  # 总参数数
+            ntp = nxajpm + nroutpm + nwtspm  # total number of parameters
         else:
-            ntp = nxajpm + nroutpm + nwtspm + 1  # 总参数数 + 1个降水校正参数
+            ntp = nxajpm + nroutpm + nwtspm + 1  # total + one precipitation correction parameter
         
         # =============================================================================
-        # RNN模型选择 (RNN Model Selection)
+        # RNN model selection
         # =============================================================================
-        # 根据rnn_type参数选择相应的RNN模型
+        # Choose the RNN model according to `rnn_type`.
         if self.rnn_type == 'lstm':
             self.lstminv = CudnnLstmModel(
                 nx=ninv, ny=ntp, hiddenSize=hiddeninv, dr=drinv)
@@ -502,100 +532,96 @@ class MultiInv_XAJModel(nn.Module):
         else:
             raise ValueError("rnn_type must be one of: 'lstm', 'gru', 'bilstm', 'bigru', 'rnn', 'cnnlstm', 'cnnbilstm'")
 
-        # XAJ水文模型实例
+        # XAJ hydrological model instance
         self.XAJ = XAJMul()
 
         # =============================================================================
-        # 模型属性保存 (Model Attributes Storage)
+        # Store model attributes
         # =============================================================================
-        self.gpu = 1                    # GPU标志（保留用于兼容性）
-        self.inittime = inittime        # XAJ模型预热时间
-        self.routOpt = routOpt          # 汇流选项
-        self.comprout = comprout        # 组件汇流选项
-        self.nxajpm = nxajpm           # XAJ参数数量
-        self.nwtspm = nwtspm           # 权重参数数量
-        self.nroutpm = nroutpm         # 汇流参数数量
-        self.pcorr = pcorr             # 降水校正参数
+        self.gpu = 1                    # GPU flag (kept for compatibility)
+        self.inittime = inittime        # warm-up time for the XAJ model
+        self.routOpt = routOpt          # routing option
+        self.comprout = comprout        # component-wise routing option
+        self.nxajpm = nxajpm            # number of XAJ parameters
+        self.nwtspm = nwtspm            # number of weight parameters
+        self.nroutpm = nroutpm          # number of routing parameters
+        self.pcorr = pcorr              # precipitation correction parameters
 
     def forward(self, x, z, doDropMC=False):
         """
-        深度学习参数反演+静态XAJ模型前向传播函数
-        
-        参数 (Parameters):
+        Forward pass of the deep-learning-based parameter inversion + static XAJ model.
+
+        Parameters:
         ----------
         x : torch.Tensor
-            气象强迫数据，形状为[time, basin, var]
-            var包括：P(mm/d)降雨, PET(mm/d)潜在蒸散发
+            Meteorological forcing, shape [time, basin, var].
+            `var` includes: P (mm/d, precipitation), PET (mm/d, potential ET).
         z : torch.Tensor
-            静态属性数据，形状为[time, basin, ninv]
-            用于RNN参数反演的输入特征
+            Static attributes, shape [time, basin, ninv], used as RNN input for parameter inversion.
         doDropMC : bool, default=False
-            是否在推理时使用Monte Carlo Dropout（当前未实现）
-            
-        返回 (Returns):
+            Whether to use Monte Carlo dropout at inference time (currently unused).
+
+        Returns:
         ----------
         torch.Tensor
-            XAJ模型输出，包含径流模拟结果
+            XAJ model output containing simulated runoff and related variables.
         """
         # =============================================================================
-        # RNN参数反演 (RNN Parameter Inversion)
+        # RNN-based parameter inversion
         # =============================================================================
-        # 使用RNN从静态属性反演XAJ模型参数
-        # 使用RNN从静态属性反演XAJ模型参数
-        Gen = self.lstminv(z)  # RNN输出，形状为[time, basin, ntp]
-        
-        # 提取最后一个时间步的参数作为XAJ模型参数
-        Params0 = Gen[-1, :, :]  # 形状为[basin, ntp]
-        ngage = Params0.shape[0]  # 流域数量
-        
+        # Use RNN to invert XAJ parameters from static attributes
+        Gen = self.lstminv(z)  # RNN output, shape [time, basin, ntp]
+
+        # Take parameters at the last time step as XAJ parameters
+        Params0 = Gen[-1, :, :]  # [basin, ntp]
+        ngage = Params0.shape[0]  # number of basins
+
         # =============================================================================
-        # 参数解析和变换 (Parameter Parsing and Transformation)
+        # Parameter parsing and transformation
         # =============================================================================
-        # XAJ参数：从RNN输出中提取XAJ相关参数
-        xajpara0 = Params0[:, 0:self.nxajpm]  # XAJ参数部分
-        # 使用sigmoid激活函数将参数限制在[0,1]范围内
+        # XAJ parameters: take the corresponding slice from the RNN output
+        xajpara0 = Params0[:, 0:self.nxajpm]  # XAJ parameter part
+        # Use sigmoid to constrain parameters to [0, 1]
         xajpara = torch.sigmoid(xajpara0).view(ngage, self.nfea, self.nmul)
-        
-        # 汇流参数：从RNN输出中提取汇流相关参数
+
+        # Routing parameters
         routpara0 = Params0[:, self.nxajpm:self.nxajpm+self.nroutpm]
         if self.comprout is False:
-            # 简单汇流：每个流域2个参数
+            # Simple routing: two parameters per basin
             routpara = torch.sigmoid(routpara0)
         else:
-            # 组件汇流：每个组件2个参数
+            # Component-wise routing: two parameters per component
             routpara = torch.sigmoid(routpara0).view(ngage * self.nmul, 2)
-        
-        # 多组件权重：从RNN输出中提取权重参数
+
+        # Component weights
         if self.nwtspm == 0:
-            # 不使用权重：简单平均
+            # No weights: simple averaging
             wts = None
         else:
-            # 使用权重：学习各组件的重要性
             wtspara = Params0[:, self.nxajpm+self.nroutpm:self.nxajpm+self.nroutpm+self.nwtspm]
-            wts = F.softmax(wtspara, dim=-1)  # 使用softmax确保权重和为1
-        
-        # 降水校正参数：从RNN输出中提取降水校正参数
+            wts = F.softmax(wtspara, dim=-1)  # ensure weights sum to 1
+
+        # Precipitation correction parameters
         if self.pcorr is None:
             corrpara = None
         else:
             corrpara0 = Params0[:, self.nxajpm+self.nroutpm+self.nwtspm:self.nxajpm+self.nroutpm+self.nwtspm+1]
             corrpara = torch.sigmoid(corrpara0)
-        
+
         # =============================================================================
-        # XAJ水文模拟 (XAJ Hydrological Simulation)
+        # XAJ hydrological simulation
         # =============================================================================
-        # 使用反演得到的参数运行XAJ模型
+        # Run the XAJ model with the inverted parameters
         out = self.XAJ(
-            x, 
-            parameters=xajpara, 
-            mu=self.nmul, 
-            muwts=wts, 
-            rtwts=routpara, 
+            x,
+            parameters=xajpara,
+            mu=self.nmul,
+            muwts=wts,
+            rtwts=routpara,
             bufftime=self.inittime,
-            routOpt=self.routOpt, 
-            comprout=self.comprout, 
-            corrwts=corrpara, 
+            routOpt=self.routOpt,
+            comprout=self.comprout,
+            corrwts=corrpara,
             pcorr=self.pcorr
         )
         return out
-

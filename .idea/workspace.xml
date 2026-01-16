@@ -4,14 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="055a9b2a-b9a0-4735-880f-04f28d950006" name="更改" comment="">
+    <list default="true" id="055a9b2a-b9a0-4735-880f-04f28d950006" name="更改" comment="Initial commit">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/experiments/PUBsplitLst.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydroMLlib/utils/camels.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydroMLlib/utils/criterion.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydroMLlib/utils/defaultSetting.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydroMLlib/utils/fileManager.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydroMLlib/utils/metrics.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hydroMLlib/utils/time.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/experiments/save_results_plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/save_results_plot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experiments/testXAJ-Dynamic.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/testXAJ-Dynamic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experiments/testXAJ-Static.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/testXAJ-Static.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experiments/trainXAJ-Dynamic.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/trainXAJ-Dynamic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experiments/trainXAJ-Static.py" beforeDir="false" afterPath="$PROJECT_DIR$/experiments/trainXAJ-Static.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydroMLlib/model/dLmodels.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydroMLlib/model/dLmodels.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydroMLlib/model/hydroRouting.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydroMLlib/model/hydroRouting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydroMLlib/model/rnn.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydroMLlib/model/rnn.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydroMLlib/model/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydroMLlib/model/train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydroMLlib/model/xaj_dynamic.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydroMLlib/model/xaj_dynamic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hydroMLlib/model/xaj_static.py" beforeDir="false" afterPath="$PROJECT_DIR$/hydroMLlib/model/xaj_static.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,20 +25,28 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="PUSH_AUTO_UPDATE" value="true" />
+    <option name="PUSH_TAGS">
+      <GitPushTagMode>
+        <option name="argument" value="--follow-tags" />
+        <option name="title" value="Current Branch" />
+      </GitPushTagMode>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "mbSun1"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;mbSun1&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/mbSun1/physDL_XAJ.git",
-    "accountId": "643a1d93-221b-4c8a-8273-a8dad7817275"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mbSun1/physDL_XAJ.git&quot;,
+    &quot;accountId&quot;: &quot;643a1d93-221b-4c8a-8273-a8dad7817275&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -41,43 +55,44 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python 测试.Doctests (parsers 内).executor": "Run",
-    "Python.StreamflowExample-DI.executor": "Run",
-    "Python.camels.executor": "Run",
-    "Python.defaultSetting.executor": "Run",
-    "Python.fix_model_attributes.executor": "Run",
-    "Python.rnn.executor": "Run",
-    "Python.stat.executor": "Run",
-    "Python.testPUR-Reg.executor": "Run",
-    "Python.testXAJ-Dynamic.executor": "Run",
-    "Python.testXAJ-Static.executor": "Run",
-    "Python.test_data_loading.executor": "Run",
-    "Python.test_param_save.executor": "Run",
-    "Python.testdPLHBV-Dynamic.executor": "Run",
-    "Python.testdPLHBV-Static.executor": "Run",
-    "Python.train.executor": "Run",
-    "Python.trainPUR-Reg.executor": "Run",
-    "Python.trainXAJ-Dynamic.executor": "Run",
-    "Python.trainXAJ-Static.executor": "Run",
-    "Python.traindPLHBV-Dynamic.executor": "Run",
-    "Python.traindPLHBV-Static.executor": "Run",
-    "Python.traindPLHBV.executor": "Run",
-    "Python.xaj_static.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "D:/01_学术研究/00_在研论文/DPL/1模型代码调试/输入静态属性+强迫10.15重新调试/PhysDLXAJ",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.lookFeel",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python 测试.Doctests (parsers 内).executor&quot;: &quot;Run&quot;,
+    &quot;Python.StreamflowExample-DI.executor&quot;: &quot;Run&quot;,
+    &quot;Python.camels.executor&quot;: &quot;Run&quot;,
+    &quot;Python.defaultSetting.executor&quot;: &quot;Run&quot;,
+    &quot;Python.fix_model_attributes.executor&quot;: &quot;Run&quot;,
+    &quot;Python.rnn.executor&quot;: &quot;Run&quot;,
+    &quot;Python.stat.executor&quot;: &quot;Run&quot;,
+    &quot;Python.testPUR-Reg.executor&quot;: &quot;Run&quot;,
+    &quot;Python.testXAJ-Dynamic.executor&quot;: &quot;Run&quot;,
+    &quot;Python.testXAJ-Static.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_data_loading.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test_param_save.executor&quot;: &quot;Run&quot;,
+    &quot;Python.testdPLHBV-Dynamic.executor&quot;: &quot;Run&quot;,
+    &quot;Python.testdPLHBV-Static.executor&quot;: &quot;Run&quot;,
+    &quot;Python.train.executor&quot;: &quot;Run&quot;,
+    &quot;Python.trainPUR-Reg.executor&quot;: &quot;Run&quot;,
+    &quot;Python.trainXAJ-Dynamic.executor&quot;: &quot;Run&quot;,
+    &quot;Python.trainXAJ-Static.executor&quot;: &quot;Run&quot;,
+    &quot;Python.traindPLHBV-Dynamic.executor&quot;: &quot;Run&quot;,
+    &quot;Python.traindPLHBV-Static.executor&quot;: &quot;Run&quot;,
+    &quot;Python.traindPLHBV.executor&quot;: &quot;Run&quot;,
+    &quot;Python.xaj_static.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/01_学术研究/00_在研论文/可微参数学习-混合水文模型/6代码上传/physDL_XAJ&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\01_学术研究\00_在研论文\DPL\1模型代码调试\输入静态属性+强迫10.15重新调试\PhysDL\experiments1" />
@@ -121,19 +136,70 @@
       <workItem from="1763173197822" duration="23953000" />
       <workItem from="1763431605930" duration="442000" />
       <workItem from="1763453777772" duration="67763000" />
-      <workItem from="1768559340330" duration="1325000" />
+      <workItem from="1768559340330" duration="1652000" />
+      <workItem from="1768617488173" duration="1850000" />
+      <workItem from="1773020943357" duration="34000" />
+      <workItem from="1773021961573" duration="1464000" />
     </task>
+    <task id="LOCAL-00001" summary="Initial commit">
+      <option name="closed" value="true" />
+      <created>1768560936568</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1768560936568</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Initial commit">
+      <option name="closed" value="true" />
+      <created>1768561000446</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1768561000446</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Initial commit">
+      <option name="closed" value="true" />
+      <created>1768561024789</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1768561024789</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Initial commit">
+      <option name="closed" value="true" />
+      <created>1768561181981</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1768561181981</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Initial commit" />
+    <option name="LAST_COMMIT_MESSAGE" value="Initial commit" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/hydroMLlib/model/xaj_static.py</url>
-          <line>16</line>
+          <line>14</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>

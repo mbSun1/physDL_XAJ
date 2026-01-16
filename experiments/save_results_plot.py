@@ -9,29 +9,29 @@ from datetime import datetime, timedelta
 
 def save_hydro(outpath, testepoch, logtestIDLst, forcTestUN, obsTestUN, predtestALL):
     """
-    保存测试期的降雨、观测流量、预测流量和其他水文过程变量到hydro_variables_csv
-    
-    参数:
-        outpath: 输出路径
-        testepoch: 测试使用的epoch
-        logtestIDLst: 测试站点ID列表
-        forcTestUN: 测试期的输入数据 [basin, time, var]，包括降雨等
-        obsTestUN: 测试期的观测流量 [basin, time, 1]
-        predtestALL: 测试期的预测结果 [basin, time, var]，包括流量和其他水文过程变量
+    Save test-period rainfall, observed flow, predicted flow and other hydrological variables to hydro_variables_csv.
+
+    Args:
+        outpath: Output directory path.
+        testepoch: Epoch used for testing.
+        logtestIDLst: List of test basin IDs.
+        forcTestUN: Test input data [basin, time, var], e.g. rainfall.
+        obsTestUN: Test observed flow [basin, time, 1].
+        predtestALL: Test predictions [basin, time, var], flow and other hydrological variables.
     """
     print("=" * 50)
     print("Saving hydro variables")
     print("=" * 50)
     
-    # 创建保存数据的文件夹
+    # Create output directory for hydro variables
     hydro_variables_csv = os.path.join(outpath, 'hydro_variables_csv')
     if not os.path.exists(hydro_variables_csv):
         os.makedirs(hydro_variables_csv)
     
-    # 获取变量名称
-    var_names = ['Qr', 'Q0', 'Q1', 'Q2', 'ET']  # 预测变量名称
-    
-    # 遍历每个站点，保存数据
+    # Variable names for predicted outputs
+    var_names = ['Qr', 'Q0', 'Q1', 'Q2', 'ET']
+
+    # Iterate over basins and save data
     n_basins = len(logtestIDLst)
     
     print(f"Processing {n_basins} basins")
@@ -39,44 +39,43 @@ def save_hydro(outpath, testepoch, logtestIDLst, forcTestUN, obsTestUN, predtest
     for i in range(n_basins):
         basin_id = logtestIDLst[i]
         
-        # 进度显示
+        # Progress
         progress = (i + 1) / n_basins * 100
         print(f"\rSaving data: {i+1}/{n_basins} [{basin_id}] - {progress:.1f}%", end="", flush=True)
-        
-        # 提取该站点的数据
-        rainfall = forcTestUN[i, :, 0]  # 第一个变量是降雨量(prcp)
-        obs_flow = obsTestUN[i, :, 0]   # 观测流量
-        pred_flow = predtestALL[i, :, 0]  # 预测流量 (Q0)
-        
-        # 创建DataFrame保存所有数据
+
+        # Extract data for this basin
+        rainfall = forcTestUN[i, :, 0]   # First variable is precipitation (prcp)
+        obs_flow = obsTestUN[i, :, 0]    # Observed flow
+        pred_flow = predtestALL[i, :, 0] # Predicted flow (Q0)
+
+        # Build DataFrame with all variables
         data = {
             'Rainfall': rainfall,
             'Observed_Flow': obs_flow,
             'Predicted_Flow': pred_flow
         }
         
-        # 添加其他水文过程变量
+        # Add other hydrological process variables
         for j, var_name in enumerate(var_names):
-            if j > 0:  # 跳过Q0，因为已经作为Predicted_Flow保存
+            if j > 0:  # Skip Q0, already saved as Predicted_Flow
                 data[var_name] = predtestALL[i, :, j]
-        
-        # 保存为CSV
+
+        # Save to CSV
         df = pd.DataFrame(data)
         csv_file = os.path.join(hydro_variables_csv, f"{basin_id}.csv")
         
-        # 直接使用UTF-8-sig编码，如果遇到无效字符则跳过
+        # Use UTF-8-sig; skip file if invalid characters
         try:
             df.to_csv(csv_file, index=False, encoding='utf-8-sig')
         except UnicodeEncodeError:
-            # 如果遇到无效字符，跳过该文件
-            print(f"\n警告: 跳过 {basin_id} (包含无效字符)", end="", flush=True)
+            print(f"\nWarning: Skipping {basin_id} (invalid characters)", end="", flush=True)
             continue
     
     print("\n" + "=" * 50)
     print(f"Hydro variables saved to: {hydro_variables_csv}")
     print("=" * 50)
     
-    # 生成README文件，说明数据格式
+    # Write README describing data format
     with open(os.path.join(outpath, 'README.txt'), 'w') as f:
         f.write("Data Description\n")
         f.write("=" * 50 + "\n\n")
@@ -92,34 +91,29 @@ def save_hydro(outpath, testepoch, logtestIDLst, forcTestUN, obsTestUN, predtest
 
 def generate_streamflow_plots(outpath, logtestIDLst, obsTestUN, predtestALL, max_plots=None, test_start_date='19951001'):
     """
-    为每个站点生成径流对比图（不包含降雨）
-    
-    参数:
-        outpath: 输出路径
-        logtestIDLst: 测试站点ID列表
-        obsTestUN: 测试期的观测流量 [basin, time, 1]
-        predtestALL: 测试期的预测结果 [basin, time, var]，包括流量和其他水文过程变量
-        max_plots: 最大生成图片数量，None表示生成全部图片
-        test_start_date: 测试开始日期，格式为 'YYYYMMDD'
+    Generate streamflow comparison plots (no rainfall) for each basin.
+
+    Args:
+        outpath: Output directory path.
+        logtestIDLst: List of test basin IDs.
+        obsTestUN: Test observed flow [basin, time, 1].
+        predtestALL: Test predictions [basin, time, var], flow and other variables.
+        max_plots: Max number of plots to generate; None = all basins.
+        test_start_date: Test start date, format 'YYYYMMDD'.
     """
     print("=" * 50)
     print("Starting to generate streamflow comparison plots")
     print("=" * 50)
     
-    # 设置matplotlib使用中文字体
-    
     matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans']
     matplotlib.rcParams['axes.unicode_minus'] = False
-    
-    # 创建保存图表的文件夹
+
+    # Create directory for streamflow plots
     streamflow_plots = os.path.join(outpath, 'streamflow_plots')
     if not os.path.exists(streamflow_plots):
         os.makedirs(streamflow_plots)
     
-    # 仅使用 basin_id 标题，不依赖外部全局路径
-    
-    # 生成日期序列（根据测试开始日期动态生成）
-    # 处理test_start_date，可能是字符串或整数
+    # Build date sequence from test start date (handles str or int)
     if isinstance(test_start_date, int):
         test_start_date = str(test_start_date)
     
@@ -131,14 +125,13 @@ def generate_streamflow_plots(outpath, logtestIDLst, obsTestUN, predtestALL, max
     n_days = obsTestUN.shape[1]
     dates = [start_date + timedelta(days=i) for i in range(n_days)]
     
-    # 设置x轴刻度（5个刻度）
+    # X-axis ticks (5 ticks)
     x_ticks = np.linspace(0, len(dates)-1, 5, dtype=int)
     x_labels = [dates[i].strftime('%Y-%m') for i in x_ticks]
     
-    # 遍历每个站点，生成图表
     n_basins = len(logtestIDLst)
-    
-    # 确定要处理的站点数量
+
+    # Number of basins to plot
     if max_plots is not None and max_plots > 0 and max_plots < n_basins:
         plot_count = max_plots
         print(f"Generating plots for first {max_plots} basins only")
@@ -149,40 +142,33 @@ def generate_streamflow_plots(outpath, logtestIDLst, obsTestUN, predtestALL, max
     for i in range(plot_count):
         basin_id = logtestIDLst[i]
         
-        # 可选：根据 basin_id 设置可读名称（此处直接使用 basin_id）
-        
-        # 进度显示
+        # Progress
         progress = (i + 1) / n_basins * 100
         print(f"\rGenerating plot: {i+1}/{n_basins} [{basin_id}] - {progress:.1f}%", end="", flush=True)
         
-        # 提取该站点的数据
-        obs_flow = obsTestUN[i, :, 0]   # 观测流量
-        pred_flow = predtestALL[i, :, 0]  # 预测流量 (Qr)
-        
-        # 计算NSE
+        obs_flow = obsTestUN[i, :, 0]   # Observed flow
+        pred_flow = predtestALL[i, :, 0]  # Predicted flow (Qr)
+
         nse = calculate_nse(obs_flow, pred_flow)
-        
-        # 生成径流对比图（单图）
         fig, ax = plt.subplots(1, 1, figsize=(12, 6))
-        
-        # 绘制观测和预测径流
+
+        # Plot observed and predicted streamflow
         ax.plot(dates, obs_flow, 'b-', label='Observed', linewidth=1.5, alpha=0.8)
         ax.plot(dates, pred_flow, 'r-', label='Predicted', linewidth=1.5, alpha=0.8)
         
-        # 设置标签和标题
+        # Labels and title
         ax.set_ylabel('Streamflow (mm/day)', fontsize=12)
         ax.set_xlabel('Time', fontsize=12)
         ax.set_title(f'Basin {basin_id} - NSE: {nse:.4f}', fontsize=14, fontweight='bold')
         ax.legend(fontsize=11)
         ax.grid(True, linestyle='--', alpha=0.7)
         
-        # 设置x轴刻度和标签
+        # X-axis ticks and labels
         ax.set_xticks([dates[j] for j in x_ticks])
         ax.set_xticklabels(x_labels, rotation=0)
         
-        # 保存图表
         plt.tight_layout()
-        # 清理文件名，移除可能导致问题的字符
+        # Sanitize filename
         safe_basin_id = str(basin_id).replace('/', '_').replace('\\', '_').replace(':', '_')
         plt.savefig(os.path.join(streamflow_plots, f"{safe_basin_id}.png"), dpi=300, bbox_inches='tight')
         plt.close()
@@ -191,7 +177,7 @@ def generate_streamflow_plots(outpath, logtestIDLst, obsTestUN, predtestALL, max
     print(f"Streamflow plots saved to: {streamflow_plots}")
     print("=" * 50)
     
-    # 更新README文件，添加图表说明
+    # Append plot description to README
     with open(os.path.join(outpath, 'README.txt'), 'a') as f:
         f.write("\nPlot Description:\n")
         f.write("- Single panel: Observed vs Predicted Streamflow\n")
@@ -202,23 +188,22 @@ def generate_streamflow_plots(outpath, logtestIDLst, obsTestUN, predtestALL, max
 
 def save_results_and_plot(outpath, testepoch, logtestIDLst, forcTestUN, obsTestUN, predtestALL, max_plots=None, test_start_date='19951001'):
     """
-    保存测试期的降雨、观测流量、预测流量和其他水文过程变量，并生成径流对比图
-    (整合函数，同时调用save_hydro和generate_streamflow_plots)
-    
-    参数:
-        outpath: 输出路径
-        testepoch: 测试使用的epoch
-        logtestIDLst: 测试站点ID列表
-        forcTestUN: 测试期的输入数据 [basin, time, var]，包括降雨等
-        obsTestUN: 测试期的观测流量 [basin, time, 1]
-        predtestALL: 测试期的预测结果 [basin, time, var]，包括流量和其他水文过程变量
-        max_plots: 最大生成图片数量，None表示生成全部图片，0表示不生成图片
-        test_start_date: 测试开始日期，格式为 'YYYYMMDD'
+    Save test-period data (rainfall, observed/predicted flow, etc.) and generate streamflow comparison plots.
+    Wrapper that calls save_hydro and generate_streamflow_plots.
+
+    Args:
+        outpath: Output directory path.
+        testepoch: Epoch used for testing.
+        logtestIDLst: List of test basin IDs.
+        forcTestUN: Test input data [basin, time, var].
+        obsTestUN: Test observed flow [basin, time, 1].
+        predtestALL: Test predictions [basin, time, var].
+        max_plots: Max number of plots; None=all, 0=skip plots.
+        test_start_date: Test start date, format 'YYYYMMDD'.
     """
-    # 保存数据
     hydro_variables_csv = save_hydro(outpath, testepoch, logtestIDLst, forcTestUN, obsTestUN, predtestALL)
-    
-    # 生成图表（如果max_plots为0则跳过）
+
+    # Generate plots (skip if max_plots is 0)
     streamflow_plots = None
     if max_plots is None or max_plots > 0:
         streamflow_plots = generate_streamflow_plots(outpath, logtestIDLst, obsTestUN, predtestALL, max_plots, test_start_date)
@@ -228,8 +213,8 @@ def save_results_and_plot(outpath, testepoch, logtestIDLst, forcTestUN, obsTestU
     return hydro_variables_csv, streamflow_plots
 
 def calculate_nse(obs, sim):
-    """计算Nash-Sutcliffe效率系数"""
-    # 去除NaN值
+    """Compute Nash-Sutcliffe efficiency coefficient."""
+    # Remove NaN values
     idx = np.where(~np.isnan(obs) & ~np.isnan(sim))[0]
     obs = obs[idx]
     sim = sim[idx]
@@ -247,8 +232,8 @@ def calculate_nse(obs, sim):
     return 1 - (numerator / denominator)
 
 def calculate_rmse(obs, sim):
-    """计算均方根误差"""
-    # 去除NaN值
+    """Compute root mean square error."""
+    # Remove NaN values
     idx = np.where(~np.isnan(obs) & ~np.isnan(sim))[0]
     obs = obs[idx]
     sim = sim[idx]
@@ -259,8 +244,8 @@ def calculate_rmse(obs, sim):
     return np.sqrt(np.mean((obs - sim) ** 2))
 
 def calculate_kge(obs, sim):
-    """计算Kling-Gupta效率系数"""
-    # 去除NaN值
+    """Compute Kling-Gupta efficiency coefficient."""
+    # Remove NaN values
     idx = np.where(~np.isnan(obs) & ~np.isnan(sim))[0]
     obs = obs[idx]
     sim = sim[idx]
@@ -268,7 +253,7 @@ def calculate_kge(obs, sim):
     if len(obs) == 0:
         return np.nan
     
-    # 计算相关系数
+    # Correlation and moments
     mean_obs = np.mean(obs)
     mean_sim = np.mean(sim)
     std_obs = np.std(obs)
@@ -277,17 +262,11 @@ def calculate_kge(obs, sim):
     if std_obs == 0 or std_sim == 0:
         return np.nan
     
-    # 计算相关系数r
     cov = np.mean((obs - mean_obs) * (sim - mean_sim))
     r = cov / (std_obs * std_sim)
     
-    # 计算偏差比率beta
-    beta = mean_sim / mean_obs
-    
-    # 计算变异系数比率alpha
-    alpha = std_sim / std_obs
-    
-    # 计算KGE
+    beta = mean_sim / mean_obs  # Bias ratio
+    alpha = std_sim / std_obs  # Variability ratio
     kge = 1 - np.sqrt((r - 1)**2 + (alpha - 1)**2 + (beta - 1)**2)
     
     return kge
@@ -296,29 +275,27 @@ def calculate_kge(obs, sim):
 
 def save_xaj_parameters(outpath, logtestIDLst, xaj_params, model_type='static'):
     """
-    保存XAJ参数到CSV文件，便于后续分析和绘图
-    
-    参数:
-        outpath: 输出路径
-        logtestIDLst: 测试站点ID列表
-        xaj_params: XAJ参数数组
-        model_type: 模型类型 ('static' 或 'dynamic')
+    Save XAJ parameters to CSV files for analysis and plotting.
+
+    Args:
+        outpath: Output directory path.
+        logtestIDLst: List of test basin IDs.
+        xaj_params: XAJ parameter array.
+        model_type: 'static' or 'dynamic'.
     """
     print("=" * 50)
     print("Saving XAJ parameters")
     print("=" * 50)
 
-    # 创建保存XAJ参数的文件夹
     xaj_params_dir = os.path.join(outpath, 'xaj_parameters_csv')
     if not os.path.exists(xaj_params_dir):
         os.makedirs(xaj_params_dir)
 
-    # XAJ 参数名称（12个）
     param_names = ['ke', 'b', 'wum', 'wlm', 'wm', 'c', 'sm', 'ex', 'ki', 'kg', 'ci', 'cg']
 
     n_basins = len(logtestIDLst)
     if model_type == 'static':
-        # 静态模型：xaj_params.shape = [ngage, nfea, nmul]
+        # Static model: xaj_params.shape = [ngage, nfea, nmul]
         for i in range(n_basins):
             basin_id = logtestIDLst[i]
             progress = (i + 1) / n_basins * 100
@@ -336,11 +313,10 @@ def save_xaj_parameters(outpath, logtestIDLst, xaj_params, model_type='static'):
             try:
                 df.to_csv(csv_file, index=False, encoding='utf-8-sig')
             except UnicodeEncodeError:
-                # 如果遇到无效字符，跳过该文件
-                print(f"\n警告: 跳过 {basin_id} (包含无效字符)", end="", flush=True)
+                print(f"\nWarning: Skipping {basin_id} (invalid characters)", end="", flush=True)
                 continue
     else:
-        # 动态模型：xaj_params.shape = [ntstep, ngage, nfea, nmul]
+        # Dynamic model: xaj_params.shape = [ntstep, ngage, nfea, nmul]
         for i in range(n_basins):
             basin_id = logtestIDLst[i]
             progress = (i + 1) / n_basins * 100
@@ -358,15 +334,13 @@ def save_xaj_parameters(outpath, logtestIDLst, xaj_params, model_type='static'):
             try:
                 df.to_csv(csv_file, index=False, encoding='utf-8-sig')
             except UnicodeEncodeError:
-                # 如果遇到无效字符，跳过该文件
-                print(f"\n警告: 跳过 {basin_id} (包含无效字符)", end="", flush=True)
+                print(f"\nWarning: Skipping {basin_id} (invalid characters)", end="", flush=True)
                 continue
 
     print("\n" + "=" * 50)
     print(f"XAJ parameters saved to: {xaj_params_dir}")
     print("=" * 50)
 
-    # 生成README文件，说明XAJ参数格式
     with open(os.path.join(xaj_params_dir, 'README.txt'), 'w') as f:
         f.write("XAJ Parameters Description\n")
         f.write("=" * 50 + "\n\n")
@@ -382,45 +356,43 @@ def save_xaj_parameters(outpath, logtestIDLst, xaj_params, model_type='static'):
 
 def plot_dynamic_parameters(outpath, logtestIDLst, params, model_type='dynamic', max_basins=None, test_start_date='19951001', test_end_date='20101001', train_start_date='19801001'):
     """
-    绘制动态参数时间序列（通用）
-    每个参数的Nmul个组件用灰色显示，中位数组件用不同颜色显示
-    
-    参数:
-        outpath: 输出路径
-        logtestIDLst: 测试站点ID列表
-        params: 参数数组 [ntime, nbasin, nparam, ncomp]
-        model_type: 模型类型 ('static' 或 'dynamic')
-        max_basins: 最大绘制站点数量，None表示绘制全部站点
-        test_start_date: 测试开始日期，格式为 'YYYYMMDD'
-        test_end_date: 测试结束日期，格式为 'YYYYMMDD'
-        train_start_date: 训练开始日期（参数序列起点），格式为 'YYYYMMDD'
+    Plot dynamic parameter time series.
+
+    All Nmul components for each parameter are shown in gray; the median
+    component (based on time-averaged value) is highlighted with color.
+
+    Args:
+        outpath: Output directory path.
+        logtestIDLst: List of test basin IDs.
+        params: Parameter array [ntime, nbasin, nparam, ncomp].
+        model_type: 'static' or 'dynamic'.
+        max_basins: Max basins to plot; None=all.
+        test_start_date: Test start date, format 'YYYYMMDD'.
+        test_end_date: Test end date, format 'YYYYMMDD'.
+        train_start_date: Training start (parameter sequence start), format 'YYYYMMDD'.
     """
     if model_type != 'dynamic':
-        print("此函数仅适用于动态模型参数")
+        print("This function is for dynamic model parameters only")
         return
     
     print("=" * 50)
     print("Generating dynamic parameter plots")
     print("=" * 50)
     
-    # 创建保存图表的文件夹
     param_plots_dir = os.path.join(outpath, 'parameter_plots')
     if not os.path.exists(param_plots_dir):
         os.makedirs(param_plots_dir)
     
-    # 参数名称（优先支持12个参数：XAJ）
     if params.shape[2] == 12:
         param_names = ['ke', 'b', 'wum', 'wlm', 'wm', 'c', 'sm', 'ex', 'ki', 'kg', 'ci', 'cg']
     else:
-        # 回退：通用名称
         param_names = [f'P{i+1}' for i in range(params.shape[2])]
-    
-    # 为每个参数分配不同颜色
+
+    # Color for each parameter
     param_colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 
                    'pink', 'gray', 'olive', 'cyan', 'magenta', 'yellow', 'navy']
     
-    # 生成时间轴
-    # 处理test_start_date、test_end_date、train_start_date，可能是字符串或整数
+    # Handle dates (can be str or int)
     if isinstance(test_start_date, int):
         test_start_date = str(test_start_date)
     if isinstance(test_end_date, int):
@@ -428,13 +400,11 @@ def plot_dynamic_parameters(outpath, logtestIDLst, params, model_type='dynamic',
     if isinstance(train_start_date, int):
         train_start_date = str(train_start_date)
 
-    # 计算训练期的开始日期
     train_year = int(train_start_date[:4])
     train_month = int(train_start_date[4:6])
     train_day = int(train_start_date[6:8])
     train_start_datetime = datetime(train_year, train_month, train_day)
     
-    # 计算测试期的开始和结束日期与训练起点
     start_year = int(test_start_date[:4])
     start_month = int(test_start_date[4:6])
     start_day = int(test_start_date[6:8])
@@ -445,53 +415,41 @@ def plot_dynamic_parameters(outpath, logtestIDLst, params, model_type='dynamic',
     end_day = int(test_end_date[6:8])
     test_end_datetime = datetime(end_year, end_month, end_day)
 
- 
     
-    # 计算测试期的天数
+    # Determine test-period length (in days)
     test_days = (test_end_datetime - test_start_datetime).days
-    
-    # 截取测试期的参数数据
-    # 假设参数的时间维度包含了整个序列，我们需要找到测试期对应的索引
-    # 这里假设参数的时间维度从训练开始，我们需要找到测试期开始的位置
     total_time_steps = params.shape[0]
-    
-    # 如果参数的时间步数等于测试期天数，说明已经是测试期数据
+
     if total_time_steps == test_days:
-        print(f"参数已经是测试期数据: {total_time_steps} 天")
+        print(f"Parameters are already test-period data: {total_time_steps} days")
         test_params = params
         time_axis = [test_start_datetime + timedelta(days=i) for i in range(test_days)]
     else:
-        # 如果参数包含更多时间步，需要截取测试期部分
-        # 这里假设参数从某个基准日期开始，我们需要计算测试期的偏移
-        print(f"参数包含 {total_time_steps} 天，测试期为 {test_days} 天")
-        print("截取测试期参数数据...")
-        
-        # 依据传入的训练开始日期计算到测试期开始的天数
+        print(f"Parameters span {total_time_steps} days, test period: {test_days} days")
+        print("Extracting test-period parameter data...")
+
+        # Offset from training start to test start
         days_to_test_start = (test_start_datetime - train_start_datetime).days
-        
-        # 截取测试期的参数
         start_idx = days_to_test_start
         end_idx = start_idx + test_days
         
         if end_idx <= total_time_steps:
             test_params = params[start_idx:end_idx, :, :, :]
             time_axis = [test_start_datetime + timedelta(days=i) for i in range(test_days)]
-            print(f"成功截取测试期参数: 索引 {start_idx} 到 {end_idx-1}")
+            print(f"Extracted test-period parameters: indices {start_idx} to {end_idx-1}")
         else:
-            print(f"警告: 无法截取完整的测试期数据 (需要到索引 {end_idx-1}，但只有 {total_time_steps} 天)")
-            # 截取到可用的最大范围
+            print(f"Warning: Cannot extract full test period (need index {end_idx-1}, only {total_time_steps} days)")
             available_days = total_time_steps - start_idx
             test_params = params[start_idx:, :, :, :]
             time_axis = [test_start_datetime + timedelta(days=i) for i in range(available_days)]
-            print(f"截取可用数据: {available_days} 天")
+            print(f"Extracted available data: {available_days} days")
     
     ntime = test_params.shape[0]
     
-    # 获取组件数量
-    n_components = test_params.shape[3]  # 第4个维度是组件数量
+    n_components = test_params.shape[3]
     print(f"Number of components (Nmul): {n_components}")
     
-    # 确定要绘制的站点数量
+    # Number of basins to plot
     if max_basins is None:
         n_basins_to_plot = len(logtestIDLst)
         print(f"Generating parameter plots for all {n_basins_to_plot} basins")
@@ -502,34 +460,31 @@ def plot_dynamic_parameters(outpath, logtestIDLst, params, model_type='dynamic',
     for basin_idx in range(n_basins_to_plot):
         basin_id = logtestIDLst[basin_idx]
         
-        # 调试信息：打印前几个站点ID的详细信息
+        # Debug: first few basins
         if basin_idx < 3:
             print(f"\nDebug: basin_idx={basin_idx}, basin_id={repr(basin_id)}, type={type(basin_id)}")
         
-        # 进度显示
+        # Progress
         progress = (basin_idx + 1) / n_basins_to_plot * 100
         print(f"\rGenerating plots: {basin_idx+1}/{n_basins_to_plot} [{basin_id}] - {progress:.1f}%", end="", flush=True)
         
-        # 提取该站点的参数 [ntime, nparam, ncomp]
         basin_params = test_params[:, basin_idx, :, :]
-        
-        # 为每个参数创建子图，所有参数放在同一页
+
         n_params = basin_params.shape[1]
-        
-        # 计算子图布局：尽量接近正方形
+
+        # Layout: approximately square grid
         n_cols = int(np.ceil(np.sqrt(n_params)))
         n_rows = int(np.ceil(n_params / n_cols))
         
-        # 创建子图
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(4*n_cols, 3*n_rows))
-        
-        # 确保axes是二维数组
+
+        # Ensure axes is 2D
         if n_rows == 1 and n_cols == 1:
             axes = np.array([[axes]])
         elif n_rows == 1 or n_cols == 1:
             axes = axes.reshape(n_rows, n_cols)
         
-        # 为每个参数绘制子图
+        # Plot each parameter
         for param_idx in range(n_params):
             row = param_idx // n_cols
             col = param_idx % n_cols
@@ -538,35 +493,33 @@ def plot_dynamic_parameters(outpath, logtestIDLst, params, model_type='dynamic',
             param_name = param_names[param_idx]
             param_color = param_colors[param_idx % len(param_colors)]
             
-            # 提取该参数的所有组件时间序列 [ntime, ncomp]
             param_components = basin_params[:, param_idx, :]
             
-            # 绘制所有组件的参数（灰色线条）
+            # All components (gray)
             for comp in range(n_components):
                 ax.plot(time_axis, param_components[:, comp], 
                        color='lightgray', alpha=0.7, linewidth=0.8)
-            
-            # 计算每个组件的时间平均参数值
+
+            # Time-mean for each component
             time_averages = np.mean(param_components, axis=0)
             
-            # 找到中位数组件
+            # Find median component (by time-mean)
             median_avg = np.median(time_averages)
             median_comp_idx = np.argmin(np.abs(time_averages - median_avg))
-            
-            # 绘制中位数组件（指定颜色实线）
+
+            # Plot median component (colored line)
             ax.plot(time_axis, param_components[:, median_comp_idx], 
                    color=param_color, linewidth=2, 
                    label=f'Median (Comp {median_comp_idx+1})')
             
-            # 设置子图属性
+            # Subplot styling
             ax.set_title(f'{param_name}', fontsize=11, fontweight='bold')
             ax.set_ylabel(f'{param_name}', fontsize=9)
             ax.legend(fontsize=7)
             ax.grid(True, alpha=0.3)
-            
-            # 设置x轴格式 - 5个刻度，年月格式
+
+            # Time axis formatting (5 evenly spaced ticks, YYYY-MM)
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-            # 计算5个等间距的刻度位置
             n_ticks = 5
             tick_positions = np.linspace(0, len(time_axis)-1, n_ticks, dtype=int)
             ax.set_xticks([time_axis[i] for i in tick_positions])
@@ -574,20 +527,20 @@ def plot_dynamic_parameters(outpath, logtestIDLst, params, model_type='dynamic',
                               rotation=0, fontsize=8)
             ax.tick_params(axis='y', labelsize=8)
         
-        # 隐藏多余的子图
+        # Hide unused subplots
         for param_idx in range(n_params, n_rows * n_cols):
             row = param_idx // n_cols
             col = param_idx % n_cols
             axes[row, col].set_visible(False)
         
-        # 添加总标题
+        # Global title
         fig.suptitle(f'Dynamic Parameters - Basin {basin_id}', fontsize=14, fontweight='bold')
         
-        # 调整布局
+        # Layout and save
         plt.tight_layout()
-        plt.subplots_adjust(top=0.93)  # 为总标题留出空间
+        plt.subplots_adjust(top=0.93)
         
-        # 保存图表 - 清理文件名，移除可能导致问题的字符
+        # Sanitize filename
         safe_basin_id = str(basin_id).replace('/', '_').replace('\\', '_').replace(':', '_')
         plot_file = os.path.join(param_plots_dir, f"{safe_basin_id}_dynamic_parameters.png")
         plt.savefig(plot_file, dpi=300, bbox_inches='tight')
@@ -597,7 +550,6 @@ def plot_dynamic_parameters(outpath, logtestIDLst, params, model_type='dynamic',
     print(f"Dynamic parameter plots saved to: {param_plots_dir}")
     print("=" * 50)
     
-    # 生成README文件，说明参数图表格式
     with open(os.path.join(param_plots_dir, 'README.txt'), 'w') as f:
         f.write("Dynamic Parameter Plots Description\n")
         f.write("=" * 50 + "\n\n")
@@ -623,73 +575,72 @@ def plot_dynamic_parameters(outpath, logtestIDLst, params, model_type='dynamic',
 
 def plot_metrics_boxplot(outpath, evaDict, rnn_type):
     """
-    绘制NSE和KGE的箱线图，并标明深度学习模型名称
-    
-    参数:
-        outpath: 输出路径
-        evaDict: 评估指标字典，包含NSE和KGE
-        rnn_type: 深度学习模型类型
+    Plot boxplots of NSE and KGE metrics for a given deep learning model.
+
+    Args:
+        outpath: Output directory path.
+        evaDict: Dictionary with evaluation metrics; must contain 'NSE' and 'KGE'.
+        rnn_type: Deep learning model type string (e.g., 'lstm', 'gru').
     """
     print("=" * 50)
     print("Generating metrics boxplot")
     print("=" * 50)
     
-    # 设置matplotlib样式
-    plt.style.use('default')  # 使用默认样式
+    # Matplotlib style
+    plt.style.use('default')
     plt.rcParams['axes.grid'] = True
     plt.rcParams['grid.linestyle'] = '--'
     plt.rcParams['grid.alpha'] = 0.7
     plt.rcParams['font.size'] = 14
-    plt.rcParams['font.family'] = 'Times New Roman'  # 设置Times New Roman字体
+    plt.rcParams['font.family'] = 'Times New Roman'
     
-    # 准备数据
+    # Prepare data
     nse_values = evaDict['NSE']
     kge_values = evaDict['KGE']
     
-    # 计算中位数和四分位数
+    # Medians
     nse_median = np.nanmedian(nse_values)
     kge_median = np.nanmedian(kge_values)
     
-    # 创建数据框
+    # DataFrame for potential future use (not strictly required for boxplot)
     data = {
         'Metric': ['NSE'] * len(nse_values) + ['KGE'] * len(kge_values),
         'Value': np.concatenate([nse_values, kge_values]),
     }
     df = pd.DataFrame(data)
     
-    # 打印中位数值，用于调试
-    print(f"NSE中位数: {nse_median:.3f}")
-    print(f"KGE中位数: {kge_median:.3f}")
+    # Print medians for logging
+    print(f"NSE median: {nse_median:.3f}")
+    print(f"KGE median: {kge_median:.3f}")
     
-    # 创建图形
+    # Figure
     fig, ax = plt.subplots(figsize=(10, 8))
     
-    # 使用matplotlib的boxplot绘制箱线图
+    # Prepare boxplot data (NSE first, then KGE)
     metrics = ['NSE', 'KGE']
-    # 确保NSE和KGE数据对应正确的标签位置
     boxplot_data = [
-        nse_values,  # 第一个箱体是NSE
-        kge_values   # 第二个箱体是KGE
+        nse_values,
+        kge_values
     ]
     
-    # 绘制箱线图
+    # Draw boxplot
     bp = ax.boxplot(boxplot_data, labels=metrics, patch_artist=True, widths=0.6)
     
-    # 设置颜色
-    colors = ['#66c2a5', '#fc8d62']  # 好看的颜色
+    # Colors
+    colors = ['#66c2a5', '#fc8d62']
     
-    # 为每个箱体设置颜色
+    # Box colors
     for patch, color in zip(bp['boxes'], colors):
         patch.set_facecolor(color)
         patch.set_alpha(0.7)
     
-    # 设置边框颜色
+    # Line colors
     for element in ['whiskers', 'caps', 'medians']:
         for item in bp[element]:
             item.set_color('#2c3e50')
             item.set_linewidth(1.5)
     
-    # 设置异常值点的样式
+    # Outlier markers
     for flier in bp['fliers']:
         flier.set_marker('o')
         flier.set_markerfacecolor('#e74c3c')
@@ -697,7 +648,7 @@ def plot_metrics_boxplot(outpath, evaDict, rnn_type):
         flier.set_markersize(4)
         flier.set_alpha(0.5)
     
-    # 添加模型类型和中位数信息
+    # Map internal type to pretty model name
     model_name_map = {
         'lstm': 'LSTM',
         'gru': 'GRU',
@@ -710,46 +661,40 @@ def plot_metrics_boxplot(outpath, evaDict, rnn_type):
     
     model_name = model_name_map.get(rnn_type.lower(), rnn_type)
     
-    # 添加标题和标签
+    # Titles and labels
     ax.set_title(f'Performance Metrics for {model_name} Model\n(n={len(nse_values)} basins)', 
                 fontsize=16, family='Times New Roman')
     ax.set_ylabel('Value', fontsize=14, family='Times New Roman')
     ax.set_xlabel('', fontsize=14, family='Times New Roman')
     
-    # 设置y轴范围，确保能看到所有数据
+    # Y-axis range to include most data
     y_min = min(np.nanpercentile(nse_values, 1), np.nanpercentile(kge_values, 1))
     y_max = max(np.nanpercentile(nse_values, 99), np.nanpercentile(kge_values, 99))
     
-    # 确保y轴范围能容纳所有数据点
     ax.set_ylim(y_min - 0.1, y_max + 0.1)
     
-    # 在图框右上角添加NSE和KGE的中位数值
-    # 获取坐标轴的范围
+    # Put NSE/KGE medians in upper-right corner
     x_min, x_max = ax.get_xlim()
     y_min, y_max = ax.get_ylim()
     
-    # 计算文本位置 - 右上角，留出一定边距
-    # 由于x轴只有两个标签(0和1)，使用固定位置而不是相对位置
-    text_x = 1.45  # 位于KGE箱体右侧
-    text_y_nse = y_max * 0.95  # 靠近上边界
-    text_y_kge = y_max * 0.88  # 稍低一点
+    # For 2 metrics, use a fixed x-position near the right edge
+    text_x = 1.45
+    text_y_nse = y_max * 0.95
+    text_y_kge = y_max * 0.88
     
-    # 添加中位数标签到右上角，添加背景框使文本更清晰
+    # Add median labels with background box
     nse_text = ax.text(text_x, text_y_nse, f'NSE Median: {nse_median:.3f}', 
             ha='right', va='top', fontsize=12, fontweight='bold', family='Times New Roman')
     kge_text = ax.text(text_x, text_y_kge, f'KGE Median: {kge_median:.3f}', 
             ha='right', va='top', fontsize=12, fontweight='bold', family='Times New Roman')
             
-    # 为文本添加背景框
     nse_text.set_bbox(dict(facecolor='white', alpha=0.8, edgecolor='none', boxstyle='round,pad=0.3'))
     kge_text.set_bbox(dict(facecolor='white', alpha=0.8, edgecolor='none', boxstyle='round,pad=0.3'))
     
-    # 不需要额外的空间，因为标签已经放在图框内部
-    
-    # 添加网格线
+    # Grid
     ax.grid(True, linestyle='--', alpha=0.7)
     
-    # 保存图表
+    # save
     plot_path = os.path.join(outpath, f'Metrics_Boxplot_{model_name}.png')
     plt.tight_layout()
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
